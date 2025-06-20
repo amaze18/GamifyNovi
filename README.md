@@ -4,7 +4,7 @@ Deployed for testing at : https://cvo-app-selfie.streamlit.app/
 
 # Gamification of NoviAI : Jayden Lim Persona Chat Interface
 
-This is a Streamlit-based interactive application that simulates multi-turn conversations with a fictional persona named **Jayden Lim**. The app supports both free-form conversation and 36 structured activities. Jayden's tone, slang, and behavior are governed by a strict persona specification embedded at runtime.
+This is a Streamlit-based interactive application that facilitates multi-turn conversations with a fictional persona named **Jayden Lim**. The app supports both free-form conversation and 36 structured activities. Jayden's tone, slang, and behavior are governed by a strict persona specification embedded at runtime.
 
 ---
 
