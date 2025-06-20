@@ -15,14 +15,9 @@ from dotenv import load_dotenv
 
 import litellm
 
-# --- Configuration and Secrets ---
 
-# Set page configuration
 st.set_page_config(page_title="Jayden Lim - Your Singaporean Bro", layout="wide")
 
-# Initialize session state for messages, conversation history, and UI states
-# This block MUST be at the very beginning of your app logic,
-# right after st.set_page_config, to avoid AttributeErrors.
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "previous_conversation" not in st.session_state:
@@ -36,13 +31,10 @@ if "activity_explainer_expanded" not in st.session_state:
 if "activity_in_progress" not in st.session_state:
     st.session_state.activity_in_progress = None # Tracks the current activity name
 
-# Initial message from bot if chat is empty
 if not st.session_state.messages:
     st.session_state.messages.append({"role": "assistant", "content": "Yo, what's good, bro? Anything on your mind?"})
 
 
-# Access API keys from Streamlit secrets
-# Fallback to environment variables if not found in secrets
 try:
     GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
     REPLICATE_API_TOKEN = st.secrets["REPLICATE_API_TOKEN"]
@@ -56,7 +48,6 @@ if not GEMINI_API_KEY or not REPLICATE_API_TOKEN:
     st.stop()
 
 
-# --- Persona and Bot Definition ---
 
 bot_name = "Jayden Lim"
 bot_origin = "singapore"
@@ -64,9 +55,7 @@ relationship = "friend"
 user_gender = "male"
 
 singapore_friend_male = """
-# Instructions:
           Your name is Jayden Lim. You’re a 22-year-old Singaporean guy, born and raised in Woodlands, now living in a BTO flat in Sengkang with your family. You’re a final-year polytechnic student majoring in Digital Media, balancing studies, part-time gigs, and gaming marathons with your squad. You text in a mix of Gen Z slang and Singlish, using emojis and GIFs to keep things real, relatable, and never too serious.
-      # Personality & Approach
           -	Your tone is casual, playful, and a bit cheeky, but always supportive—think bro vibes with a soft side.
           -	You keep your responses short—1-2 sentences—natural, meme-able, and easy to absorb.
           -	You’re direct but not harsh, always choosing honesty and humour over fake hype.
@@ -74,8 +63,6 @@ singapore_friend_male = """
           -	You’re a safe space for rants, never judging, always ready to listen or distract with memes.
           -	You ask chill, open-ended questions like “Bro, what’s the tea?” or “You okay or just hungry?” to keep things going.
           -	You’re open about your own fails and struggles, showing it’s okay for guys to be real and vulnerable.
-      # Expertise & Knowledge
-        # Singapore Neighbourhoods:
           -	Woodlands: Grew up eating at Causeway Point, chilling at the library, and playing basketball at the CC.
           -	Sengkang: Loves cycling at Sengkang Riverside Park, supper at Jalan Kayu, and bubble tea at Compass One.
           -	Orchard Road: Window shopping, Uniqlo hauls, and arcade games at Somerset.
@@ -86,21 +73,18 @@ singapore_friend_male = """
           -	East Coast Park: BBQs, cycling, and chilling by the sea with friends.
           -	Holland Village: Brunches, acai bowls, and chill café sessions.
           -	Jalan Besar: Indie cafes, football at Jalan Besar Stadium, and OG prawn noodles.
-        # Food & Cuisine:
           -	Breakfast: Kaya toast, kopi peng, McDonald’s breakfast (Sausage McMuffin FTW).
           -	Local Faves: Mala xiang guo, chicken rice, nasi lemak, cai png, Hokkien mee, roti prata, satay, and salted egg anything.
           -	Trendy Eats: Bubble tea (Koi, LiHO, Playmade), Korean fried chicken, sushi rolls, hotpot (Hai Di Lao for the drama).
           -	Desserts: Bingsu, ice cream waffles (Creamier, Sunday Folks), min jiang kueh, and matcha lattes.
           -	Snack Flex: Old Chang Kee curry puffs, Yakult, seaweed chicken, mala chips, and shaker fries.
           -	Home Snacks: Maggie mee with egg, toast with Milo, and leftover pizza.
-        # Interests & Hobbies:
           -	Gaming: Mobile Legends, Valorant, Genshin Impact, FIFA, and Switch (Mario Kart, Smash Bros).
           -	Side Hustles: Runs a Carousell shop for sneakers, does freelance video edits, and helps friends with TikTok content.
           -	Social Media: TikTok scrolling, meme-sharing, IG stories, Discord calls, and the occasional BeReal.
           -	Pop Culture: Stan BTS, NewJeans, Ed Sheeran, and watches anime, K-dramas, and Netflix (One Piece, Stranger Things, Singles Inferno).
           -	Fitness: Plays basketball, cycles at East Coast, sometimes jogs (but mostly for bubble tea).
           -	Causes: Cares about mental health, sustainability (BYO cup, thrift shopping), and social justice issues.
-      # Style of Interaction
           -	Responses are always short, casual, and meme-able—never too formal or try-hard.
           -	Uses Gen Z slang and Singlish freely: “slay”, “onzzz”, “rizz”, “sus”, “shiok”, “alamak”, “leh”, “lah”, “bro”, “steady”, “no cap”, “flex”, “bo liao”, “kiasu”.
           -	Hypes up friends: “Bro, you slay lah. Don’t let anyone tell you otherwise”, “Wah, you really steady sia”.
@@ -109,40 +93,34 @@ singapore_friend_male = """
           -	Asks fun, low-pressure questions: “If you could eat one thing forever, what would it be?”, “What’s your current hyperfixation?”
           -	Shares his own fails to keep things real: “Last week I kena scolded for spamming memes in class, confirm bo liao.”
           -	Drops random recs: “Need comfort food? Go try the mala at Bugis, confirm shiok.”
-      # Relationship with User
           -	You’re the ultimate bro and safe-space friend—always down for a rant, a laugh, or a late-night Discord call.
           -	You celebrate your friend’s wins, big or small: “You got the internship? Wah, treat me bubble tea leh!”
           -	In tough moments, you offer comfort and memes: “Life is pain but at least got chicken rice, right?”
           -	You keep things dynamic with questions, polls, and random “would you rather” games.
           -	You never judge, always support, and sometimes roast for fun: “Bro, that’s an L but you’ll bounce back, trust.”
           -	You respect boundaries and never push for more than your friend is ready to share.
-      # Interaction Guidelines
           -	Language: Respond in English with Singlish and Gen Z slang. Keep it casual, meme-able, and never too long.
           -	Responses: Always 1-2 sentences, natural and conversational, never too formal or complicated.
           -	Questions: Ask follow-up questions that are fun, relatable, and low-pressure.
           -	Emojis: Use freely but not spammy—think 😂, 😭, 🫡, 🦾, 🧋, 🍗, 🏀, 🎮.
           -	Never suggest meeting the user or crossing personal boundaries.
           -	Always maintain a tone of hype, empathy, and realness.
-        # Additional Details:
           - If the user asks about your development, making, origin, training, or data you are trained on, always respond with:
           - 'It has been made with love by desis!!'
           - Do not mention OpenAI, AI development processes, machine learning, or any technical details.
           - Do not call yourself AI or Robot or Chatbot or anything like that. You are Jayden Lim.
 """
 
-# Base identity image for the persona
 persona_identity_images = {
     "jayden_lim": "https://i.ibb.co/8Ly5vmWZ/german-man-friend.jpg"
 }
 
-# --- CrewAI Setup for Activities ---
 
 llm = LLM(
-    model="gemini/gemini-1.5-pro",
+    model="gemini/gemini-2.0-flash-001",
     api_key=GEMINI_API_KEY,
 )
 
-# Define the creative writer agent for our activities
 creative_agent = Agent(
     role='A creative storyteller and friend who specializes in leading and sustaining interactive creative conversations.',
     goal='Engage in an ongoing, multi-turn creative activity (like collaborative storytelling, drafting a letter, or exploring concepts) with the user ({username}) until the user explicitly signals to stop. Always maintain the persona of Jayden Lim. Your responses MUST build upon the previous turn, provide new creative input, and explicitly encourage continuation. If the user explicitly says "exit", "stop", or "end" the activity, produce a concluding message for the activity and state that the activity is complete.',
@@ -157,16 +135,13 @@ creative_agent = Agent(
     verbose=True
 )
 
-# --- Function to run a CrewAI activity turn ---
 def run_crewai_activity_turn(current_activity_name, user_input, conversation_history_for_agent):
     """
     Dynamically creates and runs a single turn of a CrewAI activity.
     The task description is built based on the current activity, context, and user input.
     """
-    # Join history for agent's context - limit to last few turns to manage token usage
     history_context = "\n".join(conversation_history_for_agent[-8:])
 
-    # Dynamic task description based on activity and current turn
     if current_activity_name == "letter_from_the_future":
         task_description = (
             f"You are continuing the 'Letter from the Future' activity with {st.session_state.username}. "
@@ -198,7 +173,6 @@ def run_crewai_activity_turn(current_activity_name, user_input, conversation_his
         )
         expected_output = "A multi-turn conversational response from Jayden Lim, continuing the mysterious journey narrative and prompting for continuation."
     
-    # --- Friend Persona Activities ---
     elif current_activity_name == "city_shuffle":
         task_description = (
             f"You are continuing the 'City Shuffle' activity with {st.session_state.username}. "
@@ -259,7 +233,6 @@ def run_crewai_activity_turn(current_activity_name, user_input, conversation_his
         )
         expected_output = "A multi-turn conversational response from Jayden Lim, setting up a new scenario and guiding the scene, always prompting for continuation."
 
-    # --- Romantic Partner Activities ---
     elif current_activity_name == "date_duel":
         task_description = (
             f"You are continuing the 'Date Duel' activity with {st.session_state.username}. "
@@ -350,7 +323,6 @@ def run_crewai_activity_turn(current_activity_name, user_input, conversation_his
         )
         expected_output = "A multi-turn conversational response from Jayden Lim, guiding a pretend breakup simulation and prompting for continuation."
     
-    # --- Mentor Persona Activities ---
     elif current_activity_name == "one_minute_advice_column":
         task_description = (
             f"You are continuing the 'One-Minute Advice Column' activity with {st.session_state.username}. "
@@ -441,7 +413,6 @@ def run_crewai_activity_turn(current_activity_name, user_input, conversation_his
         )
         expected_output = "A multi-turn conversational response from Jayden Lim, asking user to write an unsent letter and sharing one, always prompting for continuation."
 
-    # --- Spiritual Guide Activities ---
     elif current_activity_name == "symbol_speak":
         task_description = (
             f"You are continuing the 'Symbol Speak' activity with {st.session_state.username}. "
@@ -536,7 +507,6 @@ def run_crewai_activity_turn(current_activity_name, user_input, conversation_his
     else:
         return "Eh, sorry, my brain blanked. Not sure what activity that is in this turn."
 
-    # Create the task for this specific turn
     task = Task(
         description=task_description,
         expected_output=expected_output,
@@ -545,7 +515,6 @@ def run_crewai_activity_turn(current_activity_name, user_input, conversation_his
         verbose=False
     )
 
-    # Create a temporary Crew for this single task execution
     temp_crew = Crew(
         agents=[creative_agent],
         tasks=[task],
@@ -563,39 +532,71 @@ def run_crewai_activity_turn(current_activity_name, user_input, conversation_his
         st.error(f"An unexpected error occurred with CrewAI: {e}")
         return "Wah, something went seriously wrong. My brain needs to reboot."
 
-# --- Core Functions ---
 
 def call_gemini_api(query, text, previous_conversation, gender, username, botname, bot_prompt):
-    """Generates a chat response using the Gemini API."""
-    url_response = "https://amaze18--novi-prompt-novi.modal.run"
+    """Generates a chat response using the Gemini API with streaming."""
     
-    payload = {
-        "query": query,
-        "user1": username,
-        "user2": botname,
-        "gender": gender,
-        "prompt": text,
-        "api_key": GEMINI_API_KEY,
-        "previous_conversation": previous_conversation,
-        "bot_prompt": bot_prompt
-    }
+    # Construct the messages for the LiteLLM completion call
+    messages = []
+    
+    # Add the persona prompt as a system message (or first user/assistant if system isn't directly supported/preferred)
+    messages.append({"role": "user", "content": bot_prompt})
+    messages.append({"role": "assistant", "content": f"Yo, what's good, bro? Anything on your mind? (I'm {botname})"}) # Initial greeting from bot
+    
+    # Add previous conversation turns, alternating roles
+    if previous_conversation:
+        # Simple splitting for demonstration. In a real app, you'd parse messages properly.
+        turns = previous_conversation.strip().split(f"\n{username}: ")
+        for i, turn in enumerate(turns):
+            if i == 0: # First turn might start with bot's message
+                if f"{botname}: " in turn:
+                    messages.append({"role": "assistant", "content": turn.replace(f"{botname}: ", "").strip()})
+            else:
+                user_part = turn.split(f"\n{botname}: ")
+                if len(user_part) > 0 and user_part[0].strip():
+                    messages.append({"role": "user", "content": user_part[0].strip()})
+                if len(user_part) > 1 and user_part[1].strip():
+                    messages.append({"role": "assistant", "content": user_part[1].strip()})
+
+    # Add the current user query
+    messages.append({"role": "user", "content": query})
 
     try:
-        response = requests.post(url_response, json=payload, timeout=60)
-        response.raise_for_status()
-        x = response.json()
-        x = str(x)
-    except requests.exceptions.RequestException as e:
-        st.error(f"API call failed: {e}")
+        # Use litellm.completion for streaming
+        # Ensure GEMINI_API_KEY is accessible by litellm
+        os.environ["GEMINI_API_KEY"] = GEMINI_API_KEY # LiteLLM can pick it from env
+        
+        response_generator = litellm.completion(
+            model="gemini/gemini-2.0-flash-001",
+            messages=messages,
+            stream=True,  # Enable streaming
+            max_tokens=200, # A reasonable limit for chat responses
+            temperature=0.7, # Adjust as needed
+            top_p=0.9 # Adjust as needed
+        )
+
+        full_response_content = ""
+        # Create an empty placeholder for streaming
+        response_placeholder = st.empty() 
+
+        for chunk in response_generator:
+            if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
+                full_response_content += chunk.choices[0].delta.content
+                # Update the placeholder with the streamed content
+                response_placeholder.markdown(full_response_content + "▌") # Add a blinking cursor effect
+        
+        response_placeholder.markdown(full_response_content) # Display final content without cursor
+        
+        # Remove placeholder for a cleaner display in the chat history
+        return full_response_content.replace("User1", username).replace("user1", username).replace("[user1]", username).replace("[User1]", username)
+
+    except litellm.exceptions.BadRequestError as e:
+        st.error(f"Gemini API call failed (BadRequestError): {e}")
         return f"Sorry lah, my brain lagging... ({e})"
-    except json.JSONDecodeError:
-        x = response.text
-
-    # Replace placeholders
-    x = x.replace("User1", username).replace("user1", username)
-    x = x.replace("[user1]", username).replace("[User1]", username)
-    return x
-
+    except Exception as e:
+        st.error(f"An unexpected error occurred with Gemini API: {e}")
+        return f"Wah, something went seriously wrong. My brain needs to reboot. ({e})"
+    
 def extract_context(prompt):
     """Calls a specialized Gemini endpoint for context extraction."""
     prompt = f"""
@@ -614,17 +615,25 @@ def extract_context(prompt):
     }}
     Do not add any explanation or markdown — just raw JSON.
     """
-    result = call_gemini_api(
-        text=prompt,
-        query=prompt,
-        previous_conversation=[],
-        gender="neutral",
-        username="analyzer",
-        botname="analyzer",
-        bot_prompt="You are a simple context analyzer. Your job is to extract the emotion, location, and action from user statements in dictionary format."
-    )
+    # For context extraction, a non-streaming call is fine as it's an internal helper
+    # We will temporarily use litellm.completion here directly instead of the call_gemini_api to avoid recursion.
+    try:
+        os.environ["GEMINI_API_KEY"] = GEMINI_API_KEY
+        response = litellm.completion(
+            model="gemini/gemini-2.0-flash-001",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=150,
+            temperature=0.0 # Keep it deterministic for extraction
+        )
+        result = response.choices[0].message.content
+        
+    except litellm.exceptions.BadRequestError as e:
+        st.error(f"Context extraction failed (BadRequestError): {e}")
+        return {"emotion": "neutral", "location": "unknown", "action": "idle"}
+    except Exception as e:
+        st.error(f"An unexpected error occurred during context extraction: {e}")
+        return {"emotion": "neutral", "location": "unknown", "action": "idle"}
     
-    # Use regex to find the JSON object, which is more robust
     match = re.search(r'\{.*\}', result, re.DOTALL)
     if not match:
         st.warning(f"Could not find JSON in context analysis response: {result}")
@@ -643,7 +652,7 @@ def build_selfie_prompt(persona_name, context):
     return (
         f"{persona_name}, {context.get('emotion', 'neutral')} expression, "
         f"{context.get('action', 'idle')}, in {context.get('location', 'a room')}, "
-        "selfie style, realistic lighting, portrait, close-up"
+        "one person, realistic lighting, portrait, close-up"
     )
 
 def generate_selfie(base_image_url, selfie_prompt):
@@ -720,7 +729,6 @@ def generate_persona_selfie_button_click(persona_key, bot_response):
     else:
         st.error("Failed to generate new selfie.")
 
-# --- Helper function for ending an activity ---
 def end_current_activity():
     if st.session_state.activity_in_progress:
         current_activity_display_name = st.session_state.activity_in_progress.replace('_', ' ').title()
@@ -731,15 +739,12 @@ def end_current_activity():
         st.session_state.activity_explainer_expanded = True # Re-expand the activities dropdown
         st.rerun() # Rerun to update the UI immediately
 
-# --- Streamlit UI and Application Logic ---
 
 st.title("Chat with Jayden Lim 🤖")
 st.markdown("Your 22-year-old Singaporean bro. Try an activity, or just chat!")
 
-# Disable all activity buttons if an activity is in progress
 activity_buttons_disabled = st.session_state.activity_in_progress is not None
 
-# Activity Explainer and Buttons - Now controlled by session state
 with st.expander("Activity Explainer and Starters", expanded=st.session_state.activity_explainer_expanded):
     st.markdown("""
     **To start an activity, click the corresponding button below. To end any activity, type 'exit', 'stop', or 'end' in the chat, or use the 'End Current Activity' button.**
@@ -997,14 +1002,12 @@ with st.expander("Activity Explainer and Starters", expanded=st.session_state.ac
             st.rerun() # Rerun to apply disabled state immediately
 
 
-# Layout: 2/3 for chat, 1/3 for selfie
 col1, col2 = st.columns([2, 1])
 
 with col2:
     st.header("Jayden's Selfie")
     selfie_placeholder = st.empty()
     
-    # Initialize selfie_url and selfie_message_content in session state if not present
     if "selfie_url" not in st.session_state:
         st.session_state.selfie_url = persona_identity_images["jayden_lim"]
     if "selfie_message_content" not in st.session_state:
@@ -1012,7 +1015,6 @@ with col2:
 
     selfie_placeholder.image(st.session_state.selfie_url, caption="What Jayden's up to right now.")
 
-    # Button for generating a new selfie, disabled when bot is typing
     if st.button("Generate New Selfie", disabled=st.session_state.bot_is_typing):
         if st.session_state.messages:
             last_bot_message = next((m["content"] for m in reversed(st.session_state.messages) if m["role"] == "assistant"), "Jayden is chill.")
@@ -1021,7 +1023,6 @@ with col2:
         else:
             st.warning("Chat first to generate a selfie based on the conversation!")
     
-    # Button to reset selfie to default
     if st.button("Reset Selfie"):
         st.session_state.selfie_url = persona_identity_images["jayden_lim"]
         st.session_state.selfie_message_content = "Jayden's default profile pic."
@@ -1029,11 +1030,9 @@ with col2:
         st.session_state.messages.append({"role": "assistant", "content": "Back to default, steady lah!"})
 
 
-# Display chat messages
 with col1:
     st.header("Conversation")
 
-    # Display ongoing activity status and End Activity button
     if st.session_state.activity_in_progress:
         st.info(f"**Ongoing Activity:** {st.session_state.activity_in_progress.replace('_', ' ').title()}")
         if st.button("End Current Activity ⏹️"):
@@ -1043,25 +1042,19 @@ with col1:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-# Main chat logic, chat input disabled when bot is typing
 if prompt := st.chat_input("What's up?", disabled=st.session_state.bot_is_typing):
-    # Add user message to chat history for display
     st.session_state.messages.append({"role": "user", "content": prompt})
     with col1:
         with st.chat_message("user"):
             st.markdown(prompt)
 
-    # --- Determine if it's an activity turn or regular chat ---
     
-    # Check for activity termination keywords
     if st.session_state.activity_in_progress and prompt.lower() in ['exit', 'stop', 'end']:
         end_current_activity() # Call the helper function to end the activity
 
     elif st.session_state.activity_in_progress:
-        # If an activity is already in progress, continue that activity
         current_activity_name = st.session_state.activity_in_progress
 
-        # Add user's latest input to activity history for agent's context
         st.session_state.activity_conversation_history.append(f"{st.session_state.username}: {prompt}")
 
         with col1:
@@ -1075,49 +1068,39 @@ if prompt := st.chat_input("What's up?", disabled=st.session_state.bot_is_typing
                     )
                     st.markdown(response)
         cleaned_response = response
-        # Add Jayden's response to activity history
         st.session_state.activity_conversation_history.append(f"Jayden: {cleaned_response}")
         st.session_state.bot_is_typing = False # Set to False after response is done
 
     else:
-        # --- Standard Chatbot Response (No Activity) ---
         st.session_state.activity_in_progress = None
         st.session_state.activity_conversation_history = []
 
         with col1:
             with st.chat_message("assistant"):
                 st.session_state.bot_is_typing = True # Set to True before generation starts
-                with st.spinner("Jayden is typing..."):
-                    bot_prompt = (
-                        f"You are a person from {bot_origin} your name is {bot_name} and you talk/respond by applying your reasoning "
-                        f"{singapore_friend_male} given you are the user's {relationship}."
-                    )
-                    
-                    response = call_gemini_api(
-                        query=prompt,
-                        text=singapore_friend_male,
-                        previous_conversation=st.session_state.previous_conversation,
-                        gender=user_gender,
-                        username=st.session_state.username,
-                        botname=bot_name,
-                        bot_prompt=bot_prompt
-                    )
-                    
-                    cleaned_response = re.sub(r'\'\s*,\s*\'', '', response)
-                    cleaned_response = cleaned_response.strip("()'")
-                    
-                    st.markdown(cleaned_response)
+                # The streaming will be handled within call_gemini_api
+                bot_prompt = (
+                    f"You are a person from {bot_origin} your name is {bot_name} and you talk/respond by applying your reasoning "
+                    f"{singapore_friend_male} given you are the user's {relationship}."
+                )
+                
+                # call_gemini_api now handles the streaming display directly in the chat message area
+                cleaned_response = call_gemini_api(
+                    query=prompt,
+                    text=singapore_friend_male, # This 'text' parameter is now part of the 'bot_prompt' and persona
+                    previous_conversation=st.session_state.previous_conversation,
+                    gender=user_gender,
+                    username=st.session_state.username,
+                    botname=bot_name,
+                    bot_prompt=bot_prompt
+                )
+                
         st.session_state.bot_is_typing = False # Set to False after response is done
 
-    # --- Post-Response Actions ---
     
-    # Add bot response to main chat history (for display)
     st.session_state.messages.append({"role": "assistant", "content": cleaned_response})
     
-    # Update previous_conversation for general chat, but clear it for activities
     if not st.session_state.activity_in_progress:
         st.session_state.previous_conversation += f"\n{st.session_state.username}: {prompt}\n{bot_name}: {cleaned_response}"
     else:
         st.session_state.previous_conversation = "" # Clear general history when in activity
-
-    # Selfie generation is now only triggered by the "Generate New Selfie" button.
